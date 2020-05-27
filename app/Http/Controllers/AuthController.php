@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Auth;
 use App\Notifications\SignupActivate;
 use Carbon\Carbon;
 use App\User;
+use Avatar;
+use Storage;
+use Str;
 
 class AuthController extends Controller
 {
@@ -30,7 +33,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'activation_token' => str_random(60),
+            'activation_token' => Str::random(60),
         ]);
         $user->save();
         $user->notify(new SignupActivate($user));
@@ -69,6 +72,10 @@ class AuthController extends Controller
         if ($request->remember_me)
             $token->expires_at = Carbon::now()->addWeeks(1);
         $token->save();
+
+        $avatar = Avatar::create($user->name)->getImageObject()->encode('png');
+        Storage::put('avatars/'.$user->id.'/avatar.png', (string) $avatar);
+
         return response()->json([
             'access_token' => $tokenResult->accessToken,
             'token_type' => 'Bearer',
